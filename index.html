@@ -3,11 +3,34 @@
   <head>
     <title>Mashup</title>
     <style type="text/css">
+
       html, body { height: 100%; margin: 0; padding: 0; }
       #map { height: 100%; }
+
+      #floating-panel {
+        position: absolute;
+        top: 10px;
+        left: 45%;
+        z-index: 5;
+        background-color: #fff;
+        padding: 5px;
+        border: 1px solid #999;
+        text-align: center;
+        font-family: 'Roboto','sans-serif';
+        line-height: 30px;
+        padding-left: 10px;
+        padding-right: 10px;
+      }
+
     </style>
   </head>
   <body>
+    <div id="floating-panel">
+      Map your location with a custom blurb!<br>
+      <input id="address" type="textbox" value="Address (i.e. Tokyo, Japan)"><br>
+      <input id="infowin" type="textbox" value="Blurb (i.e. My Favorite Place!)"><br>
+      <input id="submit" type="button" value="Geocode">
+    </div>
     <div id="map"></div>
     <script type="text/javascript">
 		var map;
@@ -34,18 +57,53 @@
         maxWidth: 200
       });
 
-      var marker = new google.maps.Marker({
+      /*var marker = new google.maps.Marker({
         position: myLatLng,
         map: map,
         title: 'Uluru (Ayers Rock)',
         animation: google.maps.Animation.DROP
+      });*/
+
+      var geocoder = new google.maps.Geocoder();
+
+      document.getElementById('submit').addEventListener('click', function() {
+        geocodeAddress(geocoder, map);
       });
 
-      marker.addListener('click', function() {
+      /*marker.addListener('click', function() {
         infowindow.open(map, marker);
-      });
+      });*/
 
 		}
+
+    function geocodeAddress(geocoder, resultsMap) {
+      var address = document.getElementById('address').value;
+      var infowin = document.getElementById('infowin').value;
+      geocoder.geocode({'address': address}, function(results, status) {
+        if (status === google.maps.GeocoderStatus.OK) {
+          resultsMap.setCenter(results[0].geometry.location);
+          var marker = new google.maps.Marker({
+            map: resultsMap,
+            position: results[0].geometry.location
+          });
+          var infowindow = new google.maps.InfoWindow({
+            content: infowin,
+            maxWidth: 200
+          });
+          marker.addListener('click', function() {
+            infowindow.open(map, marker);
+            if (marker.getAnimation() !== null) {
+              marker.setAnimation(null);
+            } else {
+              marker.setAnimation(google.maps.Animation.BOUNCE);
+            }
+          });
+        } else {
+          alert('Geocode was not successful for the following reason: ' + status);
+        }
+      });
+    }
+
 
     </script>
     <script async defer
