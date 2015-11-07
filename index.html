@@ -1,118 +1,159 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Mashup</title>
-    <style type="text/css">
-
-      html, body { height: 100%; margin: 0; padding: 0; }
-      #map { height: 100%; }
-
-      #floating-panel {
-        position: absolute;
-        top: 10px;
-        left: 45%;
-        z-index: 5;
-        background-color: #fff;
-        padding: 5px;
-        border: 1px solid #999;
-        text-align: center;
-        font-family: 'Roboto','sans-serif';
-        line-height: 30px;
-        padding-left: 10px;
-        padding-right: 10px;
+    <title>Simple Map</title>
+    <meta name="viewport" content="initial-scale=1.0">
+    <meta charset="utf-8">
+    <style>
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
       }
-
-    </style>
-  </head>
-  <body>
-    <div id="floating-panel">
-      Map your location with a custom blurb!<br>
-      <input id="address" type="textbox" value="Address (i.e. Tokyo, Japan)"><br>
-      <input id="infowin" type="textbox" value="Blurb (i.e. My Favorite Place!)"><br>
-      <input id="submit" type="button" value="Geocode">
-    </div>
-    <div id="map"></div>
-    <script type="text/javascript">
-		var map;
-		function initMap() {
-
-      var myLatLng = {lat: 40.7594921, lng: -73.9311547};
-
-		  map = new google.maps.Map(document.getElementById('map'), {
-		    center: myLatLng,
-		    zoom: 9
-		  });
-
-      var contentString = '<div id="content">'+
-        '<div id="siteNotice">'+
-        '</div>'+
-        '<h1 id="firstHeading" class="firstHeading">My apartment</h1>'+
-        '<div id="bodyContent">'+
-        '<p>Boop</p>'+
-        '</div>'+
-        '</div>';
-
-      var infowindow = new google.maps.InfoWindow({
-        content: contentString,
-        maxWidth: 200
-      });
-
-      /*var marker = new google.maps.Marker({
-        position: myLatLng,
-        map: map,
-        title: 'Uluru (Ayers Rock)',
-        animation: google.maps.Animation.DROP
-      });*/
-
-      var geocoder = new google.maps.Geocoder();
-
-      document.getElementById('submit').addEventListener('click', function() {
-        geocodeAddress(geocoder, map);
-      });
-
-      /*marker.addListener('click', function() {
-        infowindow.open(map, marker);
-      });*/
-
-		}
-
-    function geocodeAddress(geocoder, resultsMap) {
-      var address = document.getElementById('address').value;
-      var infowin = document.getElementById('infowin').value;
-      geocoder.geocode({'address': address}, function(results, status) {
-        if (status === google.maps.GeocoderStatus.OK) {
-          resultsMap.setCenter(results[0].geometry.location);
-          var marker = new google.maps.Marker({
-            map: resultsMap,
-            position: results[0].geometry.location
-          });
-          var infowindow = new google.maps.InfoWindow({
-            content: infowin,
-            maxWidth: 200
-          });
-          marker.addListener('click', function() {
-            infowindow.open(map, marker);
-            if (marker.getAnimation() !== null) {
-              marker.setAnimation(null);
-            } else {
-              marker.setAnimation(google.maps.Animation.BOUNCE);
-            }
-          });
-        } else {
-          alert('Geocode was not successful for the following reason: ' + status);
-        }
-      });
+      #map {
+        height: 30%;
+      }
+      .display {
+        display: flex;
+        display: -webkit-flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+      }
+    .results {
+        width: 300px;
+        height: 500px;
+        text-align: center;
+        font-family: 'Courier New';
+        float: left;
+        border-style: dashed;
+        border-color: gray;
+        padding: 10px;
     }
 
+    .tips {
+        width: 200px;
+    }
+
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+  </head>
+  <body><br>
+    <div align='center'><input type="text" id="where" placeholder="Where?" size="50"><input type="text" id="what" placeholder="What? (i.e. bars, restaurants, etc.)" size="50">
+    <button id="goButt" onClick="ajaxFoursquare();">Go!</button></div><br>
+    <div id="map"></div>
+    <script>
+
+        var map;
+      var markers = [];
+
+        function initMap() {
+          map = new google.maps.Map(document.getElementById('map'), {
+            center: {lat: 40.7594921, lng: -73.9311547},
+            zoom: 8
+          });
+        }
 
     </script>
-    <script async defer
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBpofPV7S6fcp80PN-sBKNhSB82CcMnS50&callback=initMap">
-    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBpofPV7S6fcp80PN-sBKNhSB82CcMnS50&callback=initMap" async defer></script>
+    <script type="text/javascript">
 
-	<!--script async defer 
-	  src="https://maps.googleapis.com/maps/api/streetview?size=600x300&location=46.414382,10.013988&heading=151.78&pitch=-0.76&key=AIzaSyBpofPV7S6fcp80PN-sBKNhSB82CcMnS50">
-	</script-->
+      $("#where").keyup(function(event){
+        if(event.keyCode == 13){
+            $("#goButt").click();
+        }
+      });
+
+      $("#what").keyup(function(event){
+        if(event.keyCode == 13){
+            $("#goButt").click();
+        }
+      });
+
+          $(document).ready(function () {
+
+            ajaxFoursquare();
+
+          });
+
+          function ajaxFoursquare() {
+
+              $('#display').empty();
+
+              if (document.getElementById("where").value.length > 0) {
+
+                  initMap();
+
+                $.ajax({
+                        url: "https://api.foursquare.com/v2/venues/explore?client_id=S4ZQKC35VQKOG1PMQ3ZOMLB1XL1XTJ0CRGVNQRRRFAOIWEAE&client_secret=TSVA3VYPWZMVY3VB0AXGPBUIS05NTG0EGIQ15GVHOK0ZK11Q&near=" + document.getElementById("where").value + "&query=" + document.getElementById("what").value + "&venuePhotos=1&v=20150927",
+                        success: function(data) {
+                            displayResults(data);
+                            mapLocations(data);
+                        },
+                        error: function() {
+                            alert('something went horribly wrong! run!')
+                        }
+                    });
+
+              }
+          }
+
+
+          function displayResults (data) {
+            console.log(data);
+            var x=0;
+            $.each( data.response.groups[0].items, function( i, items ) {
+              var htmlString = "<div class='results' onClick='openInfoWin(" + i + ")'>";
+              htmlString = htmlString + "<a><h3>" + items.venue.name + "</h3></a>";
+              htmlString = htmlString + "<img src='" + items.venue.photos.groups[0].items[0].prefix + "width200" + items.venue.photos.groups[0].items[0].suffix + "'></img>";
+              htmlString = htmlString + "<div><b>" + items.venue.location.address + "</b></div>";
+              if (items.venue.location.crossStreet) { htmlString = htmlString + "<b>" + items.venue.location.crossStreet + "</b><br>"; }
+              console.log(items.tips);
+              if (typeof(items.tips) != "undefined") { htmlString = htmlString + "<br><div>" + items.tips[0].text + "</div>"; }
+              htmlString = htmlString + "</div>";
+              $("#display").append(htmlString);
+            });
+
+          }
+
+          function mapLocations(data) {
+        var geocoder = new google.maps.Geocoder();
+        var bounds = new google.maps.LatLngBounds ();
+        markers = [];
+            $.each( data.response.groups[0].items, function( i, items ) {
+
+              var myLatLng = { lat: items.venue.location.lat, lng: items.venue.location.lng };
+
+              //console.log(myLatLng);
+
+              bounds.extend(new google.maps.LatLng (items.venue.location.lat,items.venue.location.lng));
+
+              var marker = new google.maps.Marker({ position: myLatLng, map: map});
+              marker.infoWindow = new google.maps.InfoWindow({ content: items.venue.name, maxWidth: 200 });
+              marker.isOpen = false;
+
+              google.maps.event.addListener(marker, 'click', (function(marker, i) {
+                return function() {
+                  console.log(marker.infoWindow.getMap());
+                  if (marker.isOpen) { marker.infoWindow.close(); marker.isOpen = false; }
+                  else { marker.infoWindow.open(map, marker); marker.isOpen = true; }
+                }
+              })(marker, i));
+
+              markers.push(marker);
+
+            });
+            map.fitBounds (bounds);
+          }
+
+          function openInfoWin(i) {
+
+            google.maps.event.trigger(markers[i], 'click');
+
+
+          }
+
+    </script>
+    <div id="display"></div>
 
   </body>
 </html>
